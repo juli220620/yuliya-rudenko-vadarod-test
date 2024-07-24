@@ -2,7 +2,7 @@ package com.github.juli220620.controller;
 
 import com.github.juli220620.model.dto.RateForDateDto;
 import com.github.juli220620.service.CurrencyRateService;
-import com.github.juli220620.service.LoadStatus;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +17,7 @@ public class CurrencyRateController {
     private final CurrencyRateService service;
 
     @PostMapping("/{date}")
-    public LoadStatus loadRatesForDate(@PathVariable LocalDate date) {
+    public CurrencyRateService.LoadStatus loadRatesForDate(@PathVariable LocalDate date) {
         return service.loadRatesForDate(date);
     }
 
@@ -27,6 +27,7 @@ public class CurrencyRateController {
     }
 
     @Getter
+    @AllArgsConstructor
     public static class GetRateForDateRq {
         private LocalDate date;
         private long currId;

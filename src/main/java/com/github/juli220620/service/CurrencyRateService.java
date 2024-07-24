@@ -4,11 +4,15 @@ import com.github.juli220620.model.dto.RateForDateDto;
 import com.github.juli220620.model.id.CurrencyRateId;
 import com.github.juli220620.repo.CurrencyDictRepo;
 import com.github.juli220620.repo.CurrencyRateRepo;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CurrencyRateService {
@@ -22,6 +26,7 @@ public class CurrencyRateService {
            nbrbService.loadRatesForDate(date);
            return new LoadStatus();
        } catch (Exception e) {
+           log.error(e.getMessage(), e);
            return new LoadStatus(e);
        }
     }
@@ -41,5 +46,23 @@ public class CurrencyRateService {
                 date,
                 entity.getCurrRate()
         );
+    }
+
+    @Getter
+    @Setter
+    public static class LoadStatus {
+
+        private int code;
+        private String message;
+
+        public LoadStatus() {
+            code = 0;
+            message = "OK";
+        }
+
+        public LoadStatus(Exception e) {
+            code = 500;
+            message = e.getMessage();
+        }
     }
 }

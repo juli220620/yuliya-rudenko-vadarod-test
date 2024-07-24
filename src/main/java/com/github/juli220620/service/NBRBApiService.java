@@ -9,66 +9,71 @@ import com.github.juli220620.model.dto.NBRBRateDto;
 import com.github.juli220620.repo.CurrencyDictRepo;
 import com.github.juli220620.repo.CurrencyRateRepo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Stream;
+
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 
 @Service
 @RequiredArgsConstructor
 public class NBRBApiService {
-    public static final String LOAD_DICT_URI = "https://api.nbrb.by/exrates/currencies";
-    public static final String LOAD_RATES_FOR_DATE_TEMPLATE = "https://api.nbrb.by/exrates/rates?periodicity=0&ondate=";
+    public static final String EMPTY_RATES_ERROR_MESSAGE = "Unable to fetch rates result from NBRB";
+    public static final String EMPTY_CURRENCIES_ERROR_MESSAGE = "Unable to fetch currencies result from NBRB";
 
     private final CurrencyDictRepo currRepo;
     private final CurrencyRateRepo rateRepo;
 
+    @Value("${app.nbrb.load-dict-uri}")
+    public String loadDictUri;
+    @Value("${app.nbrb.load-rates-for-date-uri-template}")
+    public String loadRatesForDateUriTemplate;
+
     public void loadRatesForDate(LocalDate date) {
-        RestClient client = RestClient.create();
+        var resultDaily = loadRates(date, "0");
+        var resultMonthly = loadRates(date, "1");
 
-        List<NBRBRateDto> result;
+        var dailyResultEmpty = resultDaily == null || resultDaily.isEmpty();
+        var monthlyResultEmpty = resultMonthly == null || resultMonthly.isEmpty();
 
-        try {
-            result = client.get()
-                    .uri(LOAD_RATES_FOR_DATE_TEMPLATE + date.format(DateTimeFormatter.ISO_LOCAL_DATE))
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<>() {});
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (dailyResultEmpty || monthlyResultEmpty) {
+            throw new RuntimeException(EMPTY_RATES_ERROR_MESSAGE);
         }
 
-        if (result == null || result.isEmpty()) {
-            throw new RuntimeException("Unable to fetch result from NBRB");
-        }
+        Stream.concat(resultMonthly.stream(), resultDaily.stream())
+                .map(nbrbRateDto -> new CurrencyRateDto(
+                        nbrbRateDto.getCurrId(),
+                        nbrbRateDto.getDate(),
+                        nbrbRateDto.getCurrOfficialRate()
+                )).forEach(it -> rateRepo.save(
+                        new CurrencyRateEntity(
+                                it.getCurrId(),
+                                it.getDate(),
+                                it.getCurrRate()
+                        )
+                ));
+    }
 
-        result.stream().map(nbrbRateDto -> new CurrencyRateDto(
-                nbrbRateDto.getCurrId(),
-                nbrbRateDto.getDate(),
-                nbrbRateDto.getCurrOfficialRate()
-        )).forEach(it -> rateRepo.save(
-                new CurrencyRateEntity(
-                        it.getCurrId(),
-                        it.getDate(),
-                        it.getCurrRate()
-                )
-        ));
+    private List<NBRBRateDto> loadRates(LocalDate date, String periodicity) {
+        return RestClient.create().get()
+                .uri(String.format(loadRatesForDateUriTemplate, periodicity, date.format(ISO_LOCAL_DATE)))
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
     }
 
     public void loadCurrenciesDict() {
-        RestClient client = RestClient.create(LOAD_DICT_URI);
+        var result = RestClient.create().get()
+                .uri(loadDictUri)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<NBRBCurrencyDto>>() {});
 
-        List<NBRBCurrencyDto> result;
-
-        try {
-            result = client.get()
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<>() {
-                    });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (result == null || result.isEmpty()) {
+            throw new RuntimeException(EMPTY_CURRENCIES_ERROR_MESSAGE);
         }
 
         result.stream()
