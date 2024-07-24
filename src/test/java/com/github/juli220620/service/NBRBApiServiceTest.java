@@ -45,6 +45,9 @@ class NBRBApiServiceTest {
     @BeforeEach
     public void initialize() {
         restClientMockedStatic = mockStatic(RestClient.class);
+
+        service.loadDictUri = "https://api.nbrb.by/exrates/currencies";
+        service.loadRatesForDateUriTemplate = "https://api.nbrb.by/exrates/rates?periodicity=%s&ondate=%s";
     }
 
     @Test
