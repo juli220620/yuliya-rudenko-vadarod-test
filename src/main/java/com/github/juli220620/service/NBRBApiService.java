@@ -34,6 +34,12 @@ public class NBRBApiService {
     @Value("${app.nbrb.load-rates-for-date-uri-template}")
     public String loadRatesForDateUriTemplate;
 
+    /**
+     * Loads currency exchange rates for a given rate from NBRB rest API and stores them in local
+     * persistence layer for later use
+     * @param date {@link LocalDate} for which currency exchange rates will be loaded
+     * @throws RuntimeException when loaded empty list from NBRB API
+     */
     public void loadRatesForDate(LocalDate date) {
         var resultDaily = loadRates(date, "0");
         var resultMonthly = loadRates(date, "1");
@@ -66,6 +72,10 @@ public class NBRBApiService {
                 .body(new ParameterizedTypeReference<>() {});
     }
 
+    /**
+     * Loads info about all available currencies from NBRB rest API into local persistence layer for later use
+     * @throws RuntimeException when loaded empty list from NBRB API
+     */
     public void loadCurrenciesDict() {
         var result = RestClient.create().get()
                 .uri(loadDictUri)

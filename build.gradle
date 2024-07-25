@@ -5,7 +5,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.6'
 }
 
-group = 'org.example'
+group = 'com.gitlab.juli220620'
 version = '1.0-SNAPSHOT'
 
 repositories {
@@ -17,9 +17,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-    implementation 'org.liquibase:liquibase-core:4.28.0'
+    implementation 'org.liquibase:liquibase-core'
     runtimeOnly 'com.h2database:h2:2.3.230'
-    testRuntimeOnly 'com.h2database:h2:2.3.230'
+
+    implementation 'ch.qos.logback:logback-core'
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'ch.qos.logback:logback-classic'
 }
 
 test {
